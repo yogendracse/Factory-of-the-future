@@ -108,7 +108,7 @@ export const generateZoneSimulation = async (zoneTitle: string, zoneDescription:
 };
 
 export const generateFactoryBackground = async (): Promise<string | null> => {
-  const model = "imagen-3.0-generate-001";
+  const model = "gemini-2.0-flash-exp-image-generation";
   const prompt = `A futuristic, high-tech pharmaceutical factory floor in a dark isometric 3D style. 
   
 Visual Layout:
@@ -128,46 +128,32 @@ Style:
 - Atmospheric fog or mist for depth`;
 
   try {
-    console.log("Generating factory background with Imagen 3...");
+    console.log("Generating factory background with Gemini image generation...");
     
-    const response = await genAI.models.generateImages({
+    const response = await genAI.models.generateContent({
       model: model,
-      prompt: prompt,
+      contents: prompt,
       config: {
-        numberOfImages: 1,
-        aspectRatio: "16:9"
+        responseMimeType: "image/jpeg",
+        imageConfig: {
+          aspectRatio: "16:9"
+        }
       }
     });
 
-    console.log("Imagen API response:", response);
+    console.log("Gemini API response:", response);
 
-    if (response.generatedImages && response.generatedImages.length > 0) {
-      const imageData = response.generatedImages[0];
-      if (imageData.image && imageData.image.imageBytes) {
-        // imageBytes might be string (base64) or Uint8Array depending on SDK version
-        let base64: string;
-        const imageBytes = imageData.image.imageBytes;
-        
-        if (typeof imageBytes === 'string') {
-          // Already base64 encoded
-          base64 = imageBytes;
-        } else {
-          // Convert Uint8Array to base64
-          const bytes = imageBytes as unknown as Uint8Array;
-          let binary = '';
-          for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
-          }
-          base64 = btoa(binary);
-        }
-        
-        const mimeType = imageData.image.mimeType || 'image/png';
+    // Check for inline data in the response
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        const base64 = part.inlineData.data;
+        const mimeType = part.inlineData.mimeType || 'image/jpeg';
         console.log("Factory background generated successfully!");
         return `data:${mimeType};base64,${base64}`;
       }
     }
     
-    console.warn("No image data returned from Imagen API");
+    console.warn("No image data returned from Gemini API");
     return null;
   } catch (error) {
     console.error("Background Generation Error:", error);
