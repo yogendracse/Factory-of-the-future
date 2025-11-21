@@ -34,16 +34,25 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
 
   useEffect(() => {
     const loadBackground = async () => {
-      // 1. Try to load from localStorage first (if user uploaded custom image)
+      // 1. Try to load from localStorage first
       const savedBg = localStorage.getItem('factory_bg');
       if (savedBg) {
         setBgImage(savedBg);
         return;
       }
       
-      // 2. AI image generation is not currently available with Gemini API
-      // The app will use the fallback grid pattern which looks great!
-      // To enable AI backgrounds, Imagen API integration would be needed
+      // 2. Generate new background with Imagen 3
+      setLoadingBg(true);
+      const image = await generateFactoryBackground();
+      if (image) {
+        setBgImage(image);
+        // 3. Save to localStorage for next time
+        try {
+          localStorage.setItem('factory_bg', image);
+        } catch (e) {
+          console.warn("Could not save background to local storage (quota exceeded likely)", e);
+        }
+      }
       setLoadingBg(false);
     };
 
@@ -89,6 +98,14 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
                  backgroundSize: '100% 200px'
                }}>
           </div>
+        </div>
+      )}
+
+      {/* Loading Indicator for Background */}
+      {loadingBg && (
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
+          <Loader size={12} className="animate-spin text-indigo-400" />
+          <span className="text-[10px] text-slate-400 uppercase tracking-wide">Generating AI Factory Layout...</span>
         </div>
       )}
 

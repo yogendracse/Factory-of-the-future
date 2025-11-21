@@ -108,59 +108,57 @@ export const generateZoneSimulation = async (zoneTitle: string, zoneDescription:
 };
 
 export const generateFactoryBackground = async (): Promise<string | null> => {
-  // NOTE: Gemini API currently does not support text-to-image generation
-  // This feature requires Google's Imagen API which is separate from Gemini
-  // For now, we'll return null and the app will use the fallback grid pattern
+  const model = "imagen-3.0-generate-001";
+  const prompt = `A futuristic, high-tech pharmaceutical factory floor in a dark isometric 3D style. 
   
-  console.warn("Background image generation is not available. Gemini API does not support text-to-image generation.");
-  console.info("To enable AI-generated backgrounds, you would need to integrate Google's Imagen API separately.");
-  
-  // Uncomment below if/when Imagen API integration is added
-  /*
-  const model = "imagen-3.0-generate-001"; // This would be the Imagen model
-  const prompt = `
-    A futuristic, high-tech pharmaceutical factory floor plan in a dark isometric style.
-    
-    Visual Layout:
-    - Top-Left: Large stainless steel chemical mixing tanks and processing pipes.
-    - Top-Right: Advanced IoT server racks and automated machinery.
-    - Center: Clean, white automated production lines with conveyor belts and robotic arms.
-    - Bottom-Left: A digital quality control station with screens.
-    - Bottom-Right: An automated warehouse with orange shelving and small AGV robots.
-    - Bottom-Center: A glowing, glass-walled command center (Watch Tower).
+Visual Layout:
+- Top-Left: Large stainless steel chemical mixing tanks and processing pipes with blue lighting
+- Top-Right: Advanced IoT server racks and automated machinery with screens
+- Center: Clean, white automated production lines with conveyor belts and robotic arms
+- Bottom-Left: A digital quality control station with monitors and testing equipment
+- Bottom-Right: An automated warehouse with orange/yellow shelving and small AGV robots
+- Bottom-Center: A glowing, glass-walled command center (Watch Tower) with purple/blue lighting
 
-    Style:
-    - Dark blue and slate grey color palette with neon emerald and cyan data lines.
-    - Photorealistic, cinematic lighting, highly detailed 8k resolution.
-    - Isometric perspective looking down at a 45 degree angle.
-    - No text, just visual architecture.
-  `;
+Style:
+- Dark blue and slate grey color palette with neon emerald and cyan accent lights
+- Photorealistic 3D render, cinematic lighting, highly detailed
+- Isometric perspective looking down at a 45 degree angle
+- Industrial sci-fi aesthetic with glowing data lines connecting zones
+- No text labels, just visual architecture
+- Atmospheric fog or mist for depth`;
 
   try {
-    // Imagen API call would go here
-    const response = await genAI.models.generateContent({
+    console.log("Generating factory background with Imagen 3...");
+    
+    const response = await genAI.models.generateImages({
       model: model,
-      contents: {
-        parts: [{ text: prompt }]
-      },
+      prompt: prompt,
       config: {
-        imageConfig: {
-          aspectRatio: "16:9"
+        numberOfImages: 1,
+        aspectRatio: "16:9",
+        safetySettings: {
+          harmCategory: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_ONLY_HIGH"
         }
       }
     });
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    if (response.generatedImages && response.generatedImages.length > 0) {
+      const imageData = response.generatedImages[0];
+      if (imageData.image && imageData.image.imageBytes) {
+        // Convert bytes to base64
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageData.image.imageBytes)));
+        const mimeType = imageData.image.mimeType || 'image/png';
+        console.log("Factory background generated successfully!");
+        return `data:${mimeType};base64,${base64}`;
       }
     }
+    
+    console.warn("No image data returned from Imagen API");
     return null;
   } catch (error) {
     console.error("Background Generation Error:", error);
+    console.error("Error details:", JSON.stringify(error, null, 2));
     return null;
   }
-  */
-  
-  return null;
 };
