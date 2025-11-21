@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FACTORY_ZONES, FACTORY_AREAS } from '../constants';
 import { Zone } from '../types';
-import { generateFactoryBackground } from '../services/geminiService';
+import FactoryBackground from './FactoryBackground';
 import { 
   Cpu, Users, Wifi, Activity, Eye, Bot, Brain, 
-  TowerControl, Copy, Truck, Hexagon, Image as ImageIcon, Loader
+  TowerControl, Copy, Truck, Hexagon
 } from 'lucide-react';
 
 interface FactoryMapProps {
@@ -28,86 +28,13 @@ const iconMap: Record<string, React.ElementType> = {
 const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId }) => {
   
   const watchTowerZone = FACTORY_ZONES.find(z => z.id === 'watch-tower');
-  const [bgImage, setBgImage] = useState<string | null>(null);
-  const [loadingBg, setLoadingBg] = useState(false);
   const [hoveredAreaId, setHoveredAreaId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadBackground = async () => {
-      // 1. Try to load from localStorage first
-      const savedBg = localStorage.getItem('factory_bg');
-      if (savedBg) {
-        setBgImage(savedBg);
-        return;
-      }
-      
-      // 2. Generate new background with Imagen 3
-      setLoadingBg(true);
-      const image = await generateFactoryBackground();
-      if (image) {
-        setBgImage(image);
-        // 3. Save to localStorage for next time
-        try {
-          localStorage.setItem('factory_bg', image);
-        } catch (e) {
-          console.warn("Could not save background to local storage (quota exceeded likely)", e);
-        }
-      }
-      setLoadingBg(false);
-    };
-
-    loadBackground();
-  }, []);
 
   return (
     <div className="relative w-full h-full bg-[#050914] overflow-hidden rounded-2xl border border-slate-800 shadow-2xl select-none">
       
-      {/* 1. Background Layer */}
-      {bgImage ? (
-        <div className="absolute inset-0 z-0 animate-in fade-in duration-1000">
-           <img 
-            src={bgImage} 
-            alt="Factory Floor" 
-            className="w-full h-full object-cover opacity-40 grayscale-[30%] mix-blend-luminosity" 
-           />
-           <div className="absolute inset-0 bg-[#050914]/60 mix-blend-multiply"></div>
-        </div>
-      ) : (
-        /* Enhanced Fallback Background - Futuristic Grid Pattern */
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          {/* Primary Grid */}
-          <div className="absolute inset-0 opacity-15" 
-               style={{ 
-                 backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(52, 211, 153, 0.5) 1px, transparent 0)',
-                 backgroundSize: '40px 40px'
-               }}>
-          </div>
-          {/* Secondary Larger Grid */}
-          <div className="absolute inset-0 opacity-10" 
-               style={{ 
-                 backgroundImage: 'linear-gradient(rgba(99, 102, 241, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, 0.3) 1px, transparent 1px)',
-                 backgroundSize: '120px 120px'
-               }}>
-          </div>
-          {/* Radial Gradient Overlay for Depth */}
-          <div className="absolute inset-0 bg-gradient-radial from-transparent via-[#050914]/20 to-[#050914]/60"></div>
-          {/* Animated Scan Lines */}
-          <div className="absolute inset-0 opacity-5 animate-[scan_8s_linear_infinite]"
-               style={{
-                 backgroundImage: 'linear-gradient(0deg, transparent 0%, rgba(16, 185, 129, 0.5) 50%, transparent 100%)',
-                 backgroundSize: '100% 200px'
-               }}>
-          </div>
-        </div>
-      )}
-
-      {/* Loading Indicator for Background */}
-      {loadingBg && (
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
-          <Loader size={12} className="animate-spin text-indigo-400" />
-          <span className="text-[10px] text-slate-400 uppercase tracking-wide">Generating AI Factory Layout...</span>
-        </div>
-      )}
+      {/* 1. Static SVG Background */}
+      <FactoryBackground />
 
       {/* 2. Area Highlights (Spotlights) */}
       {FACTORY_AREAS.map((area) => (
@@ -129,26 +56,10 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
 
       {/* 3. Overlay SVG Layer (Connections & Isometric Grid) */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="floorGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1e293b" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#0f172a" stopOpacity="0.8" />
-          </linearGradient>
-        </defs>
-
-        {/* Only show vector floor if no image, to define space */}
-        {!bgImage && (
-          <path 
-            d="M 15% 30% L 50% 10% L 90% 30% L 90% 80% L 50% 95% L 15% 80% Z" 
-            fill="url(#floorGradient)" 
-            stroke="#334155" 
-            strokeWidth="2"
-          />
-        )}
         
         {/* Production Flow Lines (Animated Conveyors) - Always Visible */}
         <path 
-          d="M 20% 25% C 20% 45%, 35% 55%, 35% 55% S 50% 60%, 60% 50% S 80% 75%, 80% 75%" 
+          d="M 300 250 C 300 450, 600 550, 600 550 S 900 600, 1100 500 S 1500 750, 1500 750" 
           stroke="#059669" 
           strokeWidth="3" 
           fill="none" 
@@ -159,7 +70,7 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
         />
 
         {/* Connections to Maintenance */}
-        <line x1="20%" y1="25%" x2="15%" y2="45%" stroke="#64748b" strokeWidth="1" strokeDasharray="4 4" />
+        <line x1="300" y1="250" x2="250" y2="450" stroke="#64748b" strokeWidth="1" strokeDasharray="4 4" />
         
         {/* DATA LAYER: Watch Tower Connectivity */}
         {watchTowerZone && FACTORY_ZONES.map((zone) => {
@@ -201,14 +112,6 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
           @keyframes dataStream {
             to {
               stroke-dashoffset: -84;
-            }
-          }
-          @keyframes scan {
-            0% {
-              background-position: 0% 0%;
-            }
-            100% {
-              background-position: 0% 100%;
             }
           }
         `}</style>
@@ -276,7 +179,7 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
                   : isWatchTower 
                     ? 'bg-indigo-900/60 border-indigo-500/80 shadow-[0_0_20px_rgba(99,102,241,0.4)]'
                     : isAreaHighlighted
-                      ? 'bg-emerald-800/50 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.3)]' // Highlighted by Area Hover
+                      ? 'bg-emerald-800/50 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
                       : 'bg-slate-900/60 border-slate-500/50 group-hover:border-emerald-400/80 group-hover:bg-slate-800/80'
                 }
               `}></div>
@@ -291,7 +194,7 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
                   : isWatchTower
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
                     : isAreaHighlighted
-                      ? 'bg-emerald-700 text-white shadow-lg shadow-emerald-500/20 -translate-y-1 scale-105' // Highlighted by Area Hover
+                      ? 'bg-emerald-700 text-white shadow-lg shadow-emerald-500/20 -translate-y-1 scale-105'
                       : 'bg-slate-800 text-slate-400 border border-slate-700 group-hover:bg-slate-700 group-hover:text-emerald-400 group-hover:-translate-y-1'
                 }
               `}>
