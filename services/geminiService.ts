@@ -135,19 +135,32 @@ Style:
       prompt: prompt,
       config: {
         numberOfImages: 1,
-        aspectRatio: "16:9",
-        safetySettings: {
-          harmCategory: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_ONLY_HIGH"
-        }
+        aspectRatio: "16:9"
       }
     });
+
+    console.log("Imagen API response:", response);
 
     if (response.generatedImages && response.generatedImages.length > 0) {
       const imageData = response.generatedImages[0];
       if (imageData.image && imageData.image.imageBytes) {
-        // Convert bytes to base64
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageData.image.imageBytes)));
+        // imageBytes might be string (base64) or Uint8Array depending on SDK version
+        let base64: string;
+        const imageBytes = imageData.image.imageBytes;
+        
+        if (typeof imageBytes === 'string') {
+          // Already base64 encoded
+          base64 = imageBytes;
+        } else {
+          // Convert Uint8Array to base64
+          const bytes = imageBytes as unknown as Uint8Array;
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          base64 = btoa(binary);
+        }
+        
         const mimeType = imageData.image.mimeType || 'image/png';
         console.log("Factory background generated successfully!");
         return `data:${mimeType};base64,${base64}`;
@@ -158,7 +171,7 @@ Style:
     return null;
   } catch (error) {
     console.error("Background Generation Error:", error);
-    console.error("Error details:", JSON.stringify(error, null, 2));
+    console.error("Error details:", error);
     return null;
   }
 };
