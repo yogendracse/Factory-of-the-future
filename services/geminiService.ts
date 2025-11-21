@@ -108,7 +108,16 @@ export const generateZoneSimulation = async (zoneTitle: string, zoneDescription:
 };
 
 export const generateFactoryBackground = async (): Promise<string | null> => {
-  const model = "gemini-2.5-flash-image";
+  // NOTE: Gemini API currently does not support text-to-image generation
+  // This feature requires Google's Imagen API which is separate from Gemini
+  // For now, we'll return null and the app will use the fallback grid pattern
+  
+  console.warn("Background image generation is not available. Gemini API does not support text-to-image generation.");
+  console.info("To enable AI-generated backgrounds, you would need to integrate Google's Imagen API separately.");
+  
+  // Uncomment below if/when Imagen API integration is added
+  /*
+  const model = "imagen-3.0-generate-001"; // This would be the Imagen model
   const prompt = `
     A futuristic, high-tech pharmaceutical factory floor plan in a dark isometric style.
     
@@ -128,6 +137,7 @@ export const generateFactoryBackground = async (): Promise<string | null> => {
   `;
 
   try {
+    // Imagen API call would go here
     const response = await genAI.models.generateContent({
       model: model,
       contents: {
@@ -135,7 +145,7 @@ export const generateFactoryBackground = async (): Promise<string | null> => {
       },
       config: {
         imageConfig: {
-          aspectRatio: "16:9" // Use standard landscape for the map background
+          aspectRatio: "16:9"
         }
       }
     });
@@ -150,4 +160,7 @@ export const generateFactoryBackground = async (): Promise<string | null> => {
     console.error("Background Generation Error:", error);
     return null;
   }
+  */
+  
+  return null;
 };

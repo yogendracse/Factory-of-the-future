@@ -34,25 +34,16 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
 
   useEffect(() => {
     const loadBackground = async () => {
-      // 1. Try to load from localStorage first
+      // 1. Try to load from localStorage first (if user uploaded custom image)
       const savedBg = localStorage.getItem('factory_bg');
       if (savedBg) {
         setBgImage(savedBg);
         return;
       }
       
-      // 2. If not found, generate new one
-      setLoadingBg(true);
-      const image = await generateFactoryBackground();
-      if (image) {
-        setBgImage(image);
-        // 3. Save to localStorage for next time
-        try {
-          localStorage.setItem('factory_bg', image);
-        } catch (e) {
-          console.warn("Could not save background to local storage (quota exceeded likely)", e);
-        }
-      }
+      // 2. AI image generation is not currently available with Gemini API
+      // The app will use the fallback grid pattern which looks great!
+      // To enable AI backgrounds, Imagen API integration would be needed
       setLoadingBg(false);
     };
 
@@ -62,7 +53,7 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
   return (
     <div className="relative w-full h-full bg-[#050914] overflow-hidden rounded-2xl border border-slate-800 shadow-2xl select-none">
       
-      {/* 1. AI Generated Background Image */}
+      {/* 1. Background Layer */}
       {bgImage ? (
         <div className="absolute inset-0 z-0 animate-in fade-in duration-1000">
            <img 
@@ -73,20 +64,31 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
            <div className="absolute inset-0 bg-[#050914]/60 mix-blend-multiply"></div>
         </div>
       ) : (
-        /* Fallback / Loading State Background */
-        <div className="absolute inset-0 opacity-10 pointer-events-none" 
-             style={{ 
-               backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(52, 211, 153, 0.5) 1px, transparent 0)',
-               backgroundSize: '40px 40px'
-             }}>
-        </div>
-      )}
-
-      {/* Loading Indicator for Background */}
-      {loadingBg && (
-        <div className="absolute top-4 right-4 z-0 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
-          <Loader size={12} className="animate-spin text-indigo-400" />
-          <span className="text-[10px] text-slate-400 uppercase tracking-wide">Generating AI Layout...</span>
+        /* Enhanced Fallback Background - Futuristic Grid Pattern */
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Primary Grid */}
+          <div className="absolute inset-0 opacity-15" 
+               style={{ 
+                 backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(52, 211, 153, 0.5) 1px, transparent 0)',
+                 backgroundSize: '40px 40px'
+               }}>
+          </div>
+          {/* Secondary Larger Grid */}
+          <div className="absolute inset-0 opacity-10" 
+               style={{ 
+                 backgroundImage: 'linear-gradient(rgba(99, 102, 241, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, 0.3) 1px, transparent 1px)',
+                 backgroundSize: '120px 120px'
+               }}>
+          </div>
+          {/* Radial Gradient Overlay for Depth */}
+          <div className="absolute inset-0 bg-gradient-radial from-transparent via-[#050914]/20 to-[#050914]/60"></div>
+          {/* Animated Scan Lines */}
+          <div className="absolute inset-0 opacity-5 animate-[scan_8s_linear_infinite]"
+               style={{
+                 backgroundImage: 'linear-gradient(0deg, transparent 0%, rgba(16, 185, 129, 0.5) 50%, transparent 100%)',
+                 backgroundSize: '100% 200px'
+               }}>
+          </div>
         </div>
       )}
 
@@ -182,6 +184,14 @@ const FactoryMap: React.FC<FactoryMapProps> = ({ onZoneSelect, selectedZoneId })
           @keyframes dataStream {
             to {
               stroke-dashoffset: -84;
+            }
+          }
+          @keyframes scan {
+            0% {
+              background-position: 0% 0%;
+            }
+            100% {
+              background-position: 0% 100%;
             }
           }
         `}</style>
